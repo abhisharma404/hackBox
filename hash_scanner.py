@@ -119,6 +119,8 @@ class Scanner(object):
         self.file_list = []
         self.main_dict = {}
         self.main_list = []
+        m = multiprocessing.Manager()
+        self.sharedDict = m.dict()
 
     def extractBytes(self, file_path):
         #print('Extracting')
@@ -139,20 +141,18 @@ class Scanner(object):
 
     def startEngine(self):
         #number of process to start for the scan
-        m = multiprocessing.Manager()
-        sharedList = m.list()
 
         processes = []
 
         for mode in self.list_scans:
-            myProcess = multiprocessing.Process(target=self.modeScan, args=(mode, sharedList))
+            myProcess = multiprocessing.Process(target=self.modeScan, args=(mode, self.sharedDict))
             myProcess.start()
             processes.append(myProcess)
 
         for process in processes:
             process.join()
 
-    def modeScan(self, mode, sharedList):
+    def modeScan(self, mode, sharedDict):
 
         # threads = []
         #
@@ -178,15 +178,17 @@ class Scanner(object):
         #print(dir)
         bytes = self.extractBytes(dir)
         #print(bytes)
-        temp_dict = {dir : eval('hashlib.{}(bytes)'.format(mode)).hexdigest()}
-        print(temp_dict)
+        dir_name = dir + ':' + mode
+        temp_dict = {dir_name : eval('hashlib.{}(bytes)'.format(mode)).hexdigest()}
+        #print(temp_dict)
+        self.sharedDict.update(temp_dict)
         #sharedList.append(temp_dict)
         #print(sharedList)
         #self.main_list = sharedList
 
     def printResult(self):
-        for item in self.main_list:
-            print(item)
+        for key, item in self.sharedDict.items():
+            print('[+] {} : {}'.format(key, item))
 
 obj = Scanner(list_scans=LIST_OF_SCANS, file_path=FILE_PATH)
 obj.scanDirectory()
