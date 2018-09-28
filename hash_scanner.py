@@ -111,6 +111,7 @@ class Scanner(object):
         self.main_list = []
 
     def extractBytes(self, file_path):
+        #print('Extracting')
         with open(file_path) as file:
             file_bytes = file.read()
             file_bytes = file_bytes.encode()
@@ -153,19 +154,25 @@ class Scanner(object):
         # for thread in threads:
         #     thread.join()
 
-        with ThreadPoolExecutor(max_workers=200) as executor:
-            for dir in self.file_list:
-                executor.submit(self.scanFile(dir, mode, sharedList))
+        mode_list = []
+        mode_list.append(mode)
 
-    def scanFile(self, dir, mode, sharedList):
+        # print(mode_list)
 
-        print(threading.current_thread())
+        with ThreadPoolExecutor(max_workers=20) as executor:
+                executor.map(self.scanFile, self.file_list, mode_list * len(self.file_list))
+
+    def scanFile(self, dir, mode):
+        # print(threading.current_thread())
+        # print(mode)
+        #print(dir)
         bytes = self.extractBytes(dir)
+        #print(bytes)
         temp_dict = {dir : eval('hashlib.{}(bytes)'.format(mode)).hexdigest()}
         print(temp_dict)
-        sharedList.append(temp_dict)
+        #sharedList.append(temp_dict)
         #print(sharedList)
-        self.main_list = sharedList
+        #self.main_list = sharedList
 
     def printResult(self):
         for item in self.main_list:
